@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <!-- Background Boxes -->
+    <div class="background-boxes" id="background-boxes">
+        <!-- Boxes will be dynamically generated here -->
+    </div>
+
+    <!-- Main Content -->
+    <div class="home-content">
+        <div class="home-header">
+            <h1>Face Attendance System</h1>
+            <p>A modern, secure, and efficient way to track attendance using facial recognition technology.</p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <h3 class="feature-title">Face Recognition</h3>
+                <p class="feature-description">Advanced facial recognition technology for accurate and quick identification.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3 class="feature-title">Real-time Tracking</h3>
+                <p class="feature-description">Monitor attendance in real-time with instant updates and notifications.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <h3 class="feature-title">Analytics</h3>
+                <p class="feature-description">Comprehensive analytics and reports for better attendance management.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    class BackgroundBoxes {
+        constructor(container, rows = 6, columns = 8) {
+            this.container = container;
+            this.rows = rows;
+            this.columns = columns;
+            this.colors = [
+                'rgba(67, 97, 238, 0.1)',
+                'rgba(76, 201, 240, 0.1)',
+                'rgba(247, 37, 133, 0.1)'
+            ];
+            this.init();
+        }
+
+        getRandomColor() {
+            return this.colors[Math.floor(Math.random() * this.colors.length)];
+        }
+
+        createBoxes() {
+            const boxContainer = document.createElement('div');
+            boxContainer.className = 'background-boxes-container';
+
+            for (let i = 0; i < this.rows; i++) {
+                for (let j = 0; j < this.columns; j++) {
+                    const box = document.createElement('div');
+                    box.className = 'box';
+                    
+                    // Add plus sign for every other box
+                    if ((i + j) % 2 === 0) {
+                        const plus = document.createElement('span');
+                        plus.className = 'box-plus';
+                        plus.textContent = '+';
+                        box.appendChild(plus);
+                    }
+
+                    box.addEventListener('mouseover', () => {
+                        box.style.backgroundColor = this.getRandomColor();
+                    });
+
+                    box.addEventListener('mouseout', () => {
+                        box.style.backgroundColor = '';
+                    });
+
+                    boxContainer.appendChild(box);
+                }
+            }
+
+            this.container.appendChild(boxContainer);
+        }
+
+        init() {
+            this.createBoxes();
+        }
+    }
+
+    // Initialize background boxes
+    const container = document.getElementById('background-boxes');
+    if (container) {
+        new BackgroundBoxes(container);
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Background Boxes Effect */
+.background-boxes {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.background-boxes-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 1rem;
+    padding: 2rem;
+    transform: skewX(-12deg) skewY(3deg) scale(1.2);
+}
+
+.box {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(67, 97, 238, 0.1);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: boxFadeIn 0.5s ease-out backwards;
+}
+
+.box:hover {
+    transform: scale(1.1);
+    z-index: 1;
+}
+
+.box-plus {
+    color: rgba(67, 97, 238, 0.2);
+    font-size: 1.5rem;
+    font-weight: 300;
+    transition: all 0.3s ease;
+}
+
+.box:hover .box-plus {
+    color: rgba(67, 97, 238, 0.5);
+    transform: scale(1.2) rotate(45deg);
+}
+
+@keyframes boxFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .box {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .box-plus {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .box:hover .box-plus {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Home Container and Content */
+.home-container {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    padding: 4rem 2rem;
+    z-index: 1;
+    background: transparent;
+}
+
+.home-content {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.home-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.home-header h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(45deg, var(--primary-color), var(--success-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.home-header p {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+    animation: fadeInUp 0.8s ease-out 0.2s backwards;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .background-boxes-container {
+        transform: scale(0.8) skewX(-12deg) skewY(3deg);
+        gap: 0.5rem;
+        padding: 1rem;
+    }
+
+    .home-header h1 {
+        font-size: 2.5rem;
+    }
+
+    .home-header p {
+        font-size: 1.1rem;
+    }
+}
+</style>
+{% endblock %} 

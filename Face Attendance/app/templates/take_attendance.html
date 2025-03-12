@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Take Attendance{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Take Attendance</h2>
+                </div>
+                <div class="card-body">
+                    <div class="student-info mb-4">
+                        <h4>Student Information</h4>
+                        <p><strong>Username:</strong> {{ student.get('username', 'N/A') }}</p>
+                        <p><strong>Email:</strong> {{ student.get('email', 'N/A') }}</p>
+                    </div>
+
+                    <div class="camera-section">
+                        <div class="video-container mb-3">
+                            <video id="video" width="100%" height="auto" autoplay></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button id="startCamera" class="btn btn-primary mb-2">
+                                <i class="fas fa-camera"></i> Start Camera
+                            </button>
+                            <button id="capturePhoto" class="btn btn-success mb-2" disabled>
+                                <i class="fas fa-camera-retro"></i> Take Photo
+                            </button>
+                            <button id="submitAttendance" class="btn btn-primary mb-2" disabled>
+                                <i class="fas fa-check"></i> Submit Attendance
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="result" class="mt-3 text-center" style="display: none;">
+                        <div class="alert" role="alert"></div>
+                    </div>
+
+                    <form id="attendanceForm" action="{{ url_for('record_attendance_route') }}" method="POST" style="display: none;">
+                        <input type="hidden" name="status" value="present">
+                        <input type="hidden" name="photo" id="photoData">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let stream = null;
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const startButton = document.getElementById('startCamera');
+const captureButton = document.getElementById('capturePhoto');
+const submitButton = document.getElementById('submitAttendance');
+const resultDiv = document.getElementById('result');
+const attendanceForm = document.getElementById('attendanceForm');
+
+startButton.addEventListener('click', async () => {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: true 
+        });
+        video.srcObject = stream;
+        startButton.disabled = true;
+        captureButton.disabled = false;
+        showMessage('Camera started successfully', 'success');
+    } catch (err) {
+        console.error('Error accessing camera:', err);
+        showMessage('Error accessing camera. Please make sure your camera is connected and you have granted permission.', 'danger');
+    }
+});
+
+captureButton.addEventListener('click', () => {
+    if (stream) {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const photoData = canvas.toDataURL('image/jpeg');
+        document.getElementById('photoData').value = photoData;
+        
+        submitButton.disabled = false;
+        showMessage('Photo captured successfully! Click Submit to record attendance.', 'success');
+    }
+});
+
+submitButton.addEventListener('click', () => {
+    attendanceForm.submit();
+});
+
+function showMessage(message, type) {
+    resultDiv.style.display = 'block';
+    const alert = resultDiv.querySelector('.alert');
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+}
+
+// Clean up when leaving the page
+window.addEventListener('beforeunload', () => {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+{% endblock %} 

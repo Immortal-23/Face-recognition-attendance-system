@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mark Attendance - Face Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Mark Attendance</h1>
+        <div id="camera-container">
+            <img id="video-feed" src="{{ url_for('main.video_feed') }}" alt="Video stream">
+        </div>
+        <div id="status" class="status-message">Initializing camera...</div>
+        <div id="recognition-status" class="status-message"></div>
+        <div class="button-group">
+            <button id="markAttendanceBtn" class="btn" disabled>Mark Attendance</button>
+        </div>
+    </div>
+
+    <script>
+        let status = document.getElementById('status');
+        let recognitionStatus = document.getElementById('recognition-status');
+        let markAttendanceBtn = document.getElementById('markAttendanceBtn');
+        let recognitionInterval = null;
+        let lastRecognizedUser = null;
+
+        // Start checking for face recognition
+        function startRecognitionCheck() {
+            recognitionInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('{{ url_for("main.check_recognition") }}');
+                    const result = await response.json();
+
+                    if (result.recognized) {
+                        recognitionStatus.textContent = `Welcome, ${result.user.name}!`;
+                        recognitionStatus.style.color = 'var(--secondary-color)';
+                        markAttendanceBtn.disabled = false;
+                        lastRecognizedUser = result.user;
+                    } else if (result.face_detected) {
+                        recognitionStatus.textContent = 'Face detected - Not recognized';
+                        recognitionStatus.style.color = 'var(--danger-color)';
+                        markAttendanceBtn.disabled = true;
+                        lastRecognizedUser = null;
+                    } else {
+                        recognitionStatus.textContent = 'No face detected';
+                        recognitionStatus.style.color = 'var(--text-color)';
+                        markAttendanceBtn.disabled = true;
+                        lastRecognizedUser = null;
+                    }
+                } catch (err) {
+                    console.error('Recognition check error:', err);
+                }
+            }, 1000);
+        }
+
+        // Start recognition check when page loads
+        window.addEventListener('load', () => {
+            status.textContent = 'Camera started. Please position your face in the frame.';
+            startRecognitionCheck();
+        });
+
+        // Mark attendance
+        markAttendanceBtn.addEventListener('click', async () => {
+            if (!lastRecognizedUser) {
+                status.textContent = 'Please wait for face recognition';
+                return;
+            }
+
+            try {
+                markAttendanceBtn.disabled = true;
+                status.textContent = 'Marking attendance...';
+                
+                const response = await fetch('{{ url_for("main.mark_attendance") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    status.textContent = 'Attendance marked successfully!';
+                    status.classList.add('success');
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("main.index") }}';
+                    }, 2000);
+                } else {
+                    status.textContent = result.error || 'Failed to mark attendance';
+                    markAttendanceBtn.disabled = false;
+                }
+            } catch (err) {
+                status.textContent = 'Error marking attendance: ' + err.message;
+                markAttendanceBtn.disabled = false;
+            }
+        });
+
+        // Clean up when leaving page
+        window.addEventListener('beforeunload', () => {
+            if (recognitionInterval) {
+                clearInterval(recognitionInterval);
+            }
+        });
+    </script>
+</body>
+</html>

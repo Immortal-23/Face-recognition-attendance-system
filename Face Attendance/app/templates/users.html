@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-container">
+    <h1>Registered Users</h1>
+    
+    <div class="user-list">
+        <table>
+            <thead>
+                <tr>
+                    <th>Roll Number</th>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.roll_no }}</td>
+                    <td>{{ user.name }}</td>
+                    <td>
+                        <a href="{{ url_for('main.user_attendance', roll_no=user.roll_no) }}" class="btn">View Attendance</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="actions" style="margin-top: 2rem;">
+        <a href="{{ url_for('main.dashboard') }}" class="btn">Back to Dashboard</a>
+        <a href="{{ url_for('main.register') }}" class="btn">Register New User</a>
+    </div>
+</div>
+{% endblock %} 

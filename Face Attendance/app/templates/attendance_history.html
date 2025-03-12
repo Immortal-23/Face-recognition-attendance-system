@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance History{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <div class="history-header">
+        <h1 class="history-title">Attendance History</h1>
+        <p class="history-subtitle">
+            {% if is_admin %}
+                View and manage attendance records for all students
+            {% else %}
+                View your attendance history and download reports
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="history-content">
+        <!-- Filters -->
+        <div class="filters-section glass-effect">
+            <div class="filter-group">
+                <label for="dateRange">Date Range:</label>
+                <select id="dateRange" onchange="filterRecords()">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+            </div>
+            {% if is_admin %}
+            <div class="filter-group">
+                <label for="studentFilter">Student:</label>
+                <select id="studentFilter" onchange="filterRecords()">
+                    <option value="all">All Students</option>
+                    <!-- Will be populated dynamically -->
+                </select>
+            </div>
+            {% endif %}
+            <div class="filter-group">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter" onchange="filterRecords()">
+                    <option value="all">All Status</option>
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Attendance Table -->
+        <div class="table-container glass-effect">
+            <table class="attendance-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        {% if is_admin %}
+                        <th>Student</th>
+                        {% endif %}
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody">
+                    {% for record in attendance_records %}
+                    <tr>
+                        <td>{{ record.timestamp.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ record.timestamp.strftime('%H:%M:%S') }}</td>
+                        {% if is_admin %}
+                        <td>{{ record.student.name }}</td>
+                        {% endif %}
+                        <td>
+                            <span class="status-badge {{ record.status|lower }}">
+                                {{ record.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-icon" onclick="downloadReport({{ record.student.id }})" title="Download Report">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: var(--card-bg);
+        border-radius: 1rem;
+        box-shadow: var(--card-shadow);
+    }
+
+    .history-header {
+        margin-bottom: 2rem;
+    }
+
+    .history-title {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .history-subtitle {
+        font-size: 1rem;
+        color: var(--text-color);
+    }
+
+    .filters-section {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-input {
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        background: var(--input-bg);
+        color: var(--text-color);
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .attendance-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    .attendance-table th,
+    .attendance-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .attendance-table th {
+        background: var(--card-bg);
+        font-weight: 600;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .status-badge.present {
+        background: var(--success-bg);
+        color: var(--success-color);
+    }
+
+    .status-badge.absent {
+        background: var(--error-bg);
+        color: var(--error-color);
+    }
+
+    .btn-icon {
+        padding: 0.5rem;
+        border: none;
+        background: none;
+        color: var(--text-color);
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .btn-icon:hover {
+        color: var(--primary-color);
+    }
+
+    @media (max-width: 768px) {
+        .filters-section {
+            flex-direction: column;
+        }
+
+        .filter-group {
+            width: 100%;
+        }
+
+        .filter-input {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if is_admin %}
+    loadStudents();
+    {% endif %}
+    initializeFilters();
+});
+
+// Load students for admin
+async function loadStudents() {
+    try {
+        const response = await fetch('/api/users');
+        const students = await response.json();
+        
+        const studentFilter = document.getElementById('studentFilter');
+        students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.id;
+            option.textContent = student.name;
+            studentFilter.appendChild(option);
+        });
+    } catch (err) {
+        console.error('Error loading students:', err);
+        showNotification('Error loading students', 'error');
+    }
+}
+
+// Initialize filters
+function initializeFilters() {
+    const dateRange = document.getElementById('dateRange');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    // Set default values based on URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    dateRange.value = urlParams.get('dateRange') || 'all';
+    statusFilter.value = urlParams.get('status') || 'all';
+    {% if is_admin %}
+    document.getElementById('studentFilter').value = urlParams.get('student') || 'all';
+    {% endif %}
+}
+
+// Filter records
+function filterRecords() {
+    const dateRange = document.getElementById('dateRange').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    {% if is_admin %}
+    const studentFilter = document.getElementById('studentFilter').value;
+    {% endif %}
+    
+    const rows = document.querySelectorAll('#attendanceTableBody tr');
+    rows.forEach(row => {
+        const date = new Date(row.cells[0].textContent);
+        const status = row.cells[{% if is_admin %}3{% else %}2{% endif %}].textContent.toLowerCase();
+        {% if is_admin %}
+        const studentId = row.dataset.studentId;
+        {% endif %}
+        
+        let showRow = true;
+        
+        // Date filter
+        if (dateRange !== 'all') {
+            const today = new Date();
+            const diffTime = Math.abs(today - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (dateRange === 'today' && diffDays > 1) showRow = false;
+            if (dateRange === 'week' && diffDays > 7) showRow = false;
+            if (dateRange === 'month' && diffDays > 30) showRow = false;
+        }
+        
+        // Status filter
+        if (statusFilter !== 'all' && status !== statusFilter) showRow = false;
+        
+        // Student filter (admin only)
+        {% if is_admin %}
+        if (studentFilter !== 'all' && studentId !== studentFilter) showRow = false;
+        {% endif %}
+        
+        row.style.display = showRow ? '' : 'none';
+    });
+}
+
+// Download report
+function downloadReport(studentId) {
+    window.location.href = `/api/attendance/export/${studentId}`;
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+{% endblock %} 

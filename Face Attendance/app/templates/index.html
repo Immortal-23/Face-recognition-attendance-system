@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Face Attendance System</h1>
+        <div class="button-group">
+            <a href="{{ url_for('main.register_page') }}" class="btn">Register New User</a>
+            <a href="{{ url_for('main.attendance_page') }}" class="btn">Mark Attendance</a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn">View Dashboard</a>
+        </div>
+    </div>
+</body>
+</html> 
